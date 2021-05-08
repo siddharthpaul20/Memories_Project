@@ -1,0 +1,625 @@
+Memories Project Part 3 Notes
+
+1)	In the client project
+ ->npm install jwt-decode react-google-login react-router-dom
+ 
+	In the server project
+  -> npm install bcryptjs jsonwebtoken
+  
+2) To make sure we have all the dependencies of git project installed, run below command both in client and server
+	-> npm install
+
+3) Start implementing Auth
+	We start by adding button for login and register in frontend
+	We are going to divide the AppBar present in app.js
+	
+	Creating a new folder named Navbar in Components. Create a files named Navbar.js and styles.css in the Navbar folder
+	execute rafce in the Navbar.js
+	
+	Cut the <AppBar> </AppBar> part and paste inside the return method of Navbar
+	
+	To make the Typography Momories a link to our home page, we add
+	component={Link} to="/"
+	and import { Link } from "react-router-dom";
+	
+	we took an user variable intialized to null
+	In the Navbar, based on the value in user we gonna decide to "Sign In" button or "Avatar of user and Logout button"
+	
+	On clicking on "Sign In" user will be redirected to page "/auth"
+	
+4) We make our react app multipage using react-router-dom
+	Go to app.js and import following
+	import { BrowserRouter, Switch, Route } from "react-router-dom";
+	
+	App shouldn't be doing any major logic, specially not with the Posts. Posts are only contained in the Home.
+	After copying all the logic work to a new component "Home.js", now lets implement React-router-dom
+	
+	We have to wrap everything inside the browserRouter
+	 return (
+       <BrowserRouter>
+            <Container maxwidth="lg">
+                <Navbar />
+                <Switch>
+                    <Route path="/" exact component={Home} />
+                    <Route path="/auth" exact component={Auth} />
+                </Switch>
+            </Container>
+       </BrowserRouter>
+    );
+	
+5) Now lets build Auth component
+   
+   When we have several input components that have the same property, we can create a custom component for them
+   Lets create a custom component
+   
+   Create a new file Input.js in the Auth folder
+   
+   For Password field, when user clicks on ShowPasswordButton, we need to show text.
+   For this we need to have state of Password field. So
+   
+   import React, { useState } from "react";
+   const[showPassword, setShowPassword] = useState(false);
+   
+   We created SignUp and SignIn form using single component only with the help of state "isSignup"
+   
+6) Lets create a Google Login button now
+	import { GoogleLogin } from "react-google-login";
+	
+	
+	To generate clientId for for Google Login button,
+	go to "console.developers.google.com"
+	Create a project
+	
+	Go to "OAuth Consent Screen"
+	Give project name
+	Give support email id
+	Give contact developer email id.
+	Click "Save and Continue" for the rest steps
+	
+	Then click on "Credentials" in the left panel.
+	Click on Create Credentials -> "OAuth Client Id"
+	
+	Choose application type : "Web Application"
+	Give Application Name
+	Add a URI in Authorized JavaScript origins : "https://localhost:3000" and "http://localhost:3000"
+	Add a URI in Authorized redirect URIs : "http://localhost:3000" and "http://localhost:3000/auth"
+	
+	We need to come back here once we deploy our application to change the URI
+	
+	<GoogleLogin
+		clientId="960864544028-chsdmdt8at2lor1ashi54c5kl40kvbil.apps.googleusercontent.com"
+		render={(renderProps) => (
+			<Button className={classes.googleButton} color="primary" fullWidth onClick={renderProps.onClick} disabled={renderProps.disabled} startIcon={<Icon />} variant="contained" >
+			   Google Sign In
+			</Button>
+		)}
+		onSuccess={googleSuccess}
+		onFailure={googleFailure}
+		cookiePolicy="single_host_origin"
+	/>
+	
+	const googleSuccess = async (res) => {
+        const result = res?.profileObj;
+        const token = res?.tokenId;
+
+        try {
+            dispatch({ type: "AUTH", data: { result, token } });
+        } catch(error)
+        {
+            console.log(error); 
+        }
+    };
+	
+    const googleFailure = (error) => {
+        console.log(error);
+        console.log("Google sign in failed. Please try again later.");
+    };
+    const googleFailure = (error) => {
+        console.log(error);
+        console.log("Google sign in failed. Please try again later.");
+    };
+	
+7) optional Chaining operation "?." is a special operator thats not going to throw a error if we do not access to the res  object
+
+8) On successfully google login, googleSuccess() method will dispatch an action of type "AUTH"
+
+	So now we need to add a reducer that gonna handle it properly.
+	Go to reducer folder and in there we gonna create a file called "auth.js"
+	
+	reducers are functions that accept state and action, based on that they have a switch case
+	
+	we have to export authReducer from auth.js and import in the index.js of reducer folder and add it in the combineReducers
+	
+9) We want to save the token in the local storage return in the response object by google.
+	because by that way when the browser is refeshed, the browser is still going to know we are logged in.
+	
+	import { AUTH, LOGOUT } from "../constants/actionTypes";
+
+	const authReducer = (state={ authData: null }, action) => {
+		switch (action.type) {
+			case AUTH:
+				localStorage.setItem("profile", JSON.stringify({...action?.data }));
+				
+				return { ...state, authData: action?.data };
+			default:
+				return state;
+		}
+	}
+
+	export default authReducer;
+	
+10) With the data field of the user, we are gonna use it in the Navbar component. We already had user variable there
+
+    Go to Navbar.js in the Navbar component folder
+	import React, { useState, useEffect } from 'react';
+	
+	const[user, setUser] = useState(JSON.parse(localStorage.getItem("profile")));
+	
+	we are gonna immediately try to fetch profile from the localStorage. How we do this?
+	useState(JSON.parse(localStorage.getItem("profile")));
+	
+11) For dynamically navigating to home page after SignIn we are gonna use useEffect();
+	in the Navbar.js
+	
+	 useEffect(() => {
+        const token = user?.token;
+
+        // JWT..
+
+        setUser(JSON.parse(localStorage.getItem("profile")));
+
+    },[user]);
+	
+	Going to Auth.js
+	import { useHistory } from "react-router-dom";
+	
+	const history = useHistory();
+	
+	in the googleSuccess(), after dispatch action of AUTH type, redirecting to homepage by below code
+	history.push("/");
+	
+12) Now we will implement the logout
+
+	onClick of logout
+	we are gonna dispatch action of type LOGOUT, redirect to homePage and setUser to null
+
+	Going to auth.js file in the reducer folder, implementing the logic of LOGOUT action, we want to clear localStorage
+	 case LOGOUT:
+            localStorage.clear();
+            return { ...state, authData: null };
+			
+13) On signing in, we need to refresh to see the user logged in name on the navbar. For correcting it, we are going to use "useLocation".
+
+	
+	
+	Go to Navbar.js
+	import { Link, useHistory, useLocation } from "react-router-dom";
+	const location = useLocation();
+	
+	Now when location changes ( bcoz of redirecting), we are then gonna set the user.
+	and in the dependency list of useEffect of Navbar.js, add location in it, so that when location changes, we set the user
+	
+	useEffect(() => {
+        const token = user?.token;
+
+        // JWT..
+
+        setUser(JSON.parse(localStorage.getItem("profile")));
+
+    },[location]);
+	
+14) Now lets implement manual login and registeration system using JSON web token - will require backend changes also
+
+	First focussing on FrontEnd.
+	When SignIn button is clicked, we want to perfrom set of actions.
+	
+	So going to handleSubmit() method as it is called on click of signin
+	
+	First thing is to check, that we have access to all the "state fields".
+	
+15) IMPORTANT : In react on Form submit, you always add e.preventDefault() bcoz we don't prefer reload, we always prefer to have something on the screen.
+
+16) Now the question how can we populate the formData fields on formSubmit?
+	The answer is, each one of field has "handleChange()" method
+	
+	const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+	
+	Thats why its good to have handleChange method 	
+	
+17) There are two different type of submit = Sign Up and Sign In
+	if(isSignup) {
+		dispatch(signup(formData, history));
+	}
+	else {
+		dispatch(signin(formData, history));
+	}
+	
+	importing above two actions from auth.js in the actions folder
+	
+18) create new file auth.js in the actions folder
+
+	if actions or more specifically action creators are asynchronous, then we have to use redux-thunk
+	
+	export const signin = (formData, history) => async (dispatch) => {
+		try {
+			// sign in the user
+
+			history.push("/");
+		} catch(error)
+		{
+			console.log(error);
+		}
+
+	}
+
+	export const signup = (formData, history) => async (dispatch) => {
+		try {
+			// sign up the user
+
+			history.push("/");
+		} catch(error)
+		{
+			console.log(error);
+		}
+
+	}
+	
+19) Now moving to the backend to create the userModel , controller and routes
+
+	In the index.js file of the server folder, we are gonna first add the routes for the user
+	app.use("/user", userRoutes);
+	
+	Now import userRoutes from the routes folder.
+	import express from "express";
+	import { signin, signup } from "../controllers/users.js";
+
+	const router = express.Router();
+
+	router.post("signin", signin);
+	router.post("signup", signup);
+
+	export default router;
+	
+	Now go to the controller folder to add all the logic of signing and signing up of user
+	Create file user.js in the controller folder
+	
+	import bcrypt from "bcryptjs";
+	import jwt from "jsonwebtoken"
+	
+	in this file we are gonna use the user Model, so now creating user model
+	
+
+20) bcrypt is used to hash the text
+
+	jwt is safe way for us to store the user or more specifically store the user in the browser for some period of time
+	
+	jwt.sign() method return a jsonWebToken
+	it accepts 3 parameters. First object contains the fields that you want to use to create a token.
+	Second arg is the Secret String. That only you know. Best practice is to have this secret string saved in the .env file
+	Third arg is the options. It contains expiresIn field telling the validity period of token.
+	
+	const token = jwt.sign({ email: existingUser.email, id: existingUser._id }, "test", { expiresIn: "1h" });
+
+21) createing user Model
+	create user.js file inside models folder
+	
+	import mongoose from "mongoose";
+
+	const userSchema = mongoose.Schema({
+		name: { type: String, required: true },
+		email: { type: String, required: true },
+		password: { type: String, required: true },
+		id: { type: String }
+	});
+
+	export default mongoose.model("User", userSchema);
+	
+22) user.js in the controller folder
+
+	import User from "../models/user.js";
+	import dotenv from "dotenv";
+	dotenv.config();
+
+	export const signin = async (req, res) => {
+		try {
+			const { email, password } = req.body;
+			const existingUser = await User.findOne({ email });
+
+			if(!existingUser)
+				return res.status(404).json({ message: "User doesn't exist."});
+			
+			const isPasswordCorrect = bcrypt.compare(password, existingUser.password);
+
+			if(!isPasswordCorrect)
+				return res.status(400).json({ message: "Invalid credentials." });
+
+			const token = jwt.sign({ email: existingUser.email, id: existingUser._id }, process.env.SECRET_STRING, { expiresIn: "1h" });
+
+			return res.status(200).json({ result: existingUser, token });
+		} catch(error)
+		{
+			console.log(error);
+			return res.status(500).json( {message: "Something went wrong."});
+		}
+	};
+
+	export const signup = async (req, res) => {
+		try {
+			const { email, password, confirmPassword, firstName, lastName } = req.body;
+
+			const existingUser = await User.findOne({ email });
+
+			if(existingUser)
+				return res.status(400).json({ message: "User already exist."});
+
+			if(password !== confirmPassword)
+				return res.status(400).json({ message: "Passwords don't match."});
+
+			const hashedPassword = await bcrypt.hash(password, 12);
+
+			const result = await User.create({ email, password: hashedPassword, name: `${firstName} ${lastName}` });
+
+			const token = jwt.sign({ email: result.email, id: result._id }, process.env.SECRET_STRING, { expiresIn: "1h" });
+			return res.status(200).json({ result, token });
+
+		} catch(error)
+		{
+			console.log(error);
+			return res.status(500).json( {message: "Something went wrong."});
+		}
+	};
+	
+23) Now our next step is creating Authentication Middleware that tells what actions are allowed for authenticated user. example:
+
+	// user likes a post
+	//click the like button => auth middleware (next) => like controller ..
+
+
+	Create a folder middleware in the server project. Inside it create a file "user.js"
+	
+	import jwt from "jsonwebtoken";
+	import dotenv from "dotenv";
+
+	dotenv.config();
+
+	// user likes a post
+	//click the like button => auth middleware (next) => like controller ..
+
+	const auth = (req, res, next) => {
+		try {
+			const token = req.headers.authorization.split(" ")[1];
+			const isCustomAuth = token.length < 500; // if true then token is made by us, and if false, then it is a google auth token
+
+			let decodedData;
+
+			if(token && isCustomAuth)
+			{
+				decodedData = jwt.verify(token, process.env.SECRET_STRING);
+				req.userId = decodedData?.id;
+			}
+			else
+			{
+				// it is google auth token
+				decodedData = jwt.verify(token);
+				req.userId = decodedData?.sub;
+			}
+			next();
+
+		} catch(error) {
+			console.log(error);
+		}
+
+	};
+
+export default auth;
+	
+24) decodedData?.sub    "sub" is simply  google's name for a specific ID that differentiates every single google user.
+
+25) We import (use) this middleware in the routes files
+
+	Go to the posts.js file in the router folder and import the middleware
+	import auth from "../middleware/user.js";
+
+	router.get("/", getPosts);
+	router.post("/", auth, createPost);
+	router.patch("/:id", auth, updatePost);
+	router.delete("/:id", auth, deletePost);
+	router.patch("/:id/likePost", auth, likePost);
+	
+26) Now at the backend we need to implement the logic of allowing user to like only once.
+	
+	Go to posts.js of the controller folder to update likePost method
+	
+	export const likePost = async (req, res) => {
+		const { id } = req.params;
+		try {
+
+			// first checking after applying middleware if the user is valid or not
+			if(!req.userId)
+				return res.json({ message: "Unauthenticated." });
+
+			if(!mongoose.Types.ObjectId.isValid(id))
+				return res.status(404).send("No post with that id");
+
+			const post = await PostMessage.findById(id);
+			// after getting the post, now inside like's list of the post, we iterate to check if the userId is already present or not
+			// and get a index
+
+			const index = post.likes.findIndex((id) => id === String(req.userId));
+
+			if(index===-1)
+			{
+				//likes a post
+				post.likes.push(req.userId);
+			}
+			else
+			{
+				//dislikes a post
+				post.likes = post.likes.filter((id) => id !== String(req.userId));
+				// filter is gonna return as array of id except the current user id
+			}
+			// now we have the likes in the likes of the post, we now gonna made a simple update request to update the post with this object
+
+			const updatedPost = await PostMessage.findByIdAndUpdate(id, { likeCount: post.likeCount + 1 }, { new: true });
+			
+			res.json(updatedPost);
+		} catch(error) {
+			console.log(error);
+			return res.status(404).send("No post with that id");
+		}
+	}
+
+27) Now we are need to update the PostMessage m to have the field "likes" instead of "likeCount"
+change this
+	likeCount: {
+			type: Number,
+			default: 0
+		}
+	to below
+	likes: {
+		type: [String],
+		default: []
+		}
+		
+28) Now we move to the frontEnd to first implement the signin
+	First we add the apis for the signIn
+	Go to the "index.js" file of the api folder
+	
+	import axios from "axios";
+
+	const API = axios.create({ baseURL: "http://localhost:5000" });
+
+	export const fetchPosts = () => API.get("/posts");
+	export const createPost = (newPost) => API.post("/posts", newPost);
+	export const updatePost = (id, updatedPost) => API.patch(`/posts/${id}`, updatedPost);
+	export const deletePost = (id) => API.delete(`/posts/${id}`);
+	export const likePost = (id) => API.patch(`/posts/${id}/likePost`);
+
+	export const signIn = (formData) => API.post("/users/signin", formData);
+	export const signUp = (formData) => API.post("/users/signup", formData);
+	
+29) Now we can go back to actions folder in ther auth.js file to continue creating action
+
+	export const signin = (formData, history) => async (dispatch) => {
+		try {
+			// sign in the user
+			const { data } = await api.signIn(formData);
+			dispatch({ type: AUTH, data });
+
+			history.push("/");
+		} catch(error)
+		{
+			console.log(error);
+		}
+
+	}
+
+	export const signup = (formData, history) => async (dispatch) => {
+		try {
+			// sign up the user
+			const { data } = await api.signUp(formData);
+			dispatch({ type: AUTH, data });
+
+			history.push("/");
+		} catch(error)
+		{
+			console.log(error);
+		}
+
+	}
+	
+30) We created axios instance so that we can add a one thing that is very important for our middleware. That one thing is adding something specific for each one of our request.
+	How do we do that.
+	
+	API.interceptors.request.use((req) => {
+		if(localStorage.getItem("profile")) {
+			req.headers.Authorization = `Bearer ${JSON.stringify(localStorage.getItem("profifle").token)}`;
+		}
+		return req;
+	});
+	
+	API.interceptors.request() is a function that is going to happen on each one of our request.
+	
+	We require to do above so that we can send our token back to backend, so that backend middleware could verify that we are actually logged in.
+	
+	if profile exist in localStorage, we add it to the request otherwise simply return
+	
+	Token needs to start with a word "Bearer " since our token is a bearer token
+	
+31) After user creation, we have req.userId in the backend. We require handling changes in createPost, deletePost, updatePost
+
+	Go to posts.js in the controller folder and go to createPost method
+	
+	const post = req.body;
+    const newPost = new PostMessage({ ...post, creator: req.userId, createdAt: new Date().toISOString() });
+	
+	in above creator is now gonna be userId. So we go to the model folder in the postMessage.js file and a new field name in the schema
+	
+	name: String,
+	
+	We can now remove the "Creator" input field from the form. As now name will automatically set by the backend with the name of the user logged in.
+	
+	Go to Form.js component in the front end and remove creator tag and its occurences in setting postData
+	
+32) No matter how you write at the frontend, at the backend you are only going to receive it in lowercase letters.
+
+33) Before post.creator was the name of the person. But now post.name is going to be the name of the person. creator stores the id.
+
+34) On the frontend we are not seeing like counts, so we need to provide support for change of schema at the front end as well.
+
+    We created a new component Likes inside Component->Posts->Post->Likes folder. File named Likes.js
+	It contains the logic of how to show likes.
+	if post has 0 likes , we display : LIKE
+	if post has 1 like , we display : 1 Like
+	if post has 2 like , we dipslay : 2 Likes
+	if post has > 2 like, and logged in user also liked it, we display: You and 2 others
+	if post has > 2 like, and logged in user not liked it, we display : 3 likes
+	
+	import React from 'react';
+	import ThumbUpAltIcon from "@material-ui/icons/ThumbUpAlt";
+	import ThumbUpAltOutlinedIcon from "@material-ui/icons/ThumbUpAltOutlined";
+	import ThumbUpAltOutlined from '@material-ui/icons/ThumbUpAltOutlined';
+
+
+	const Likes = ({ post, user} ) => {
+		if(post.likes.length > 0)
+		{
+			return post.likes.find((like) => like === (user?.result?.googleId || user?.result?._id))
+			? (
+				<><ThumbUpAltIcon fontSize="small" />&nbsp;{post.likes.length > 2 ? `You and ${post.likes.length -1} others` : `${post.likes.length} like${post.likes.length > 1 ?  's' : ''}` }</>
+			) : (
+				<><ThumbUpAltOutlinedIcon fontSize="small" />&nbsp;{post.likes.length} {post.likes.length ===1 ? 'Like' : 'Likes'}</>
+			);
+		}
+		else
+		{
+			return <><ThumbUpAltOutlined fontSize="small" />&nbsp;Like</>;
+		}
+	}
+
+	export default Likes
+
+	Also we have disabled feauture of like of the non-logged in user
+	
+35) Adding the functionality of not-allowing other user to delete our memory
+
+	Go to the post.js file and under the delete button write the required logic
+	
+	{(user?.result?.googleId === post?.creator || user?.result?._id === post?.creator) && (
+		<Button size="small" color="primary" onClick={() => dispatch(deletePost(post._id))}>
+			<DeleteIcon fontSize="small" />
+			Delete
+		</Button>
+	)}
+	
+36) Adding the functionality only the creator of the post can edit the post
+	Go to the post.js file
+	{(user?.result?.googleId === post?.creator || user?.result?._id === post?.creator) && (
+		<div className={classes.overlay2}>
+			<Button  style={{color: 'white'}} size="small" onClick={() => setCurrentId(post._id)} >
+				<MoreHorizIcon fontSize="default" />
+			</Button>
+		 </div>
+	)}
