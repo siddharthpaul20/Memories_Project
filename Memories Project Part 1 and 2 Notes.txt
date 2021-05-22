@@ -1,0 +1,600 @@
+In react while importing we do not need to add .js but in node, we absolutely need to add
+import post from "./post"; valid in react but not in node
+
+
+1) Client folder
+	-> npx create-react-app ./
+
+2) Server terminal
+	->npm init -y
+	
+	first create file "index.js"
+	->npm install body-parser cors express mongoose nodemon
+	
+	in the package.json in the server project, below "main"
+	"type": "module"
+	delete test in the script and add
+	"start" "nodemon index.js"
+	
+3) client terminal
+	->npm install axios moment react-file-base64 redux redux-thunk
+	
+	delete src folder
+	create src folder
+	create "index.js" inside src. "index.js" file is the only must have file a react app must have.
+	this is file where we connect our react app with index.html file
+	
+4) In every exprss applicaion what you need to do is intialize app in the index.js with express()
+	const app = express(); 
+	
+	now we can run different methond on the app instance
+	
+5) set up bodyParser so that we can properly send request
+	set up cors by app.use(cors())
+	
+6) Go to monogDB.com
+	create a cluster under your project
+	add a user in the "Database access layer"
+	add your ip in the "Network access layer"
+	thats it
+	
+	then click on the connect button -> "Connect your Application" (becoz we want to connect it with our node express application) copy the credentials
+	
+	then copy the connectionUrl to a variable in your server app
+	add PORT
+	
+	mongoose.connect()  (takes two arguments connectionUrl and second is for preventing errors)
+		.then(() => )
+		.catch((error) => )
+		
+	Our server app is now connected to the database
+	
+7) Now create routes folder and in it post.js file
+	import express from "express";
+	
+	const router = express.Router();
+	
+	add routes in the router object and export it
+	
+8) Import this router object in the index.js
+
+	now we can use expressMiddleware to connect to our applcation
+	app.use("/posts", postRoutes);  // this statement add a /posts/ to the beginning of all the routes present in the postRoutes
+	
+9) Create a controller folder
+	create posts.js in it
+	inside of it we are going to create all the handler for our routes
+	
+10) Create models folder
+	create postMessage.js
+	
+	inside of it we will create mongoose schema
+	postSchema = mongoose.Schema({
+	firstName: String,
+	lastName: String
+	});
+
+	Now when we have a schema, we have to turn it into models
+	const PostMessage = mongoose.model("PostMessage", postSchema);
+	export PostMessage;
+	
+	Now we have a model, we can use mongoose commands like find, save , update, delete
+	
+11) With post request we have access to request.body
+
+Going to frontend client
+
+12) ->npm install @material-ui/core
+	created folder structure
+
+13) React fragment so that we can add multiple things in there
+	<>
+	 <Post />
+	 <Post />
+	</>
+	
+14) inside client, we will have a folder named "api"
+	we will have "index.js" file inside api folder
+
+15) All actions towards our backend will be done using redux, we need to dispatch those actions
+	-> npm install "react-redux"
+	
+	For adding Redux, we need to add few files and boiler code.
+	
+	Inside src folder add folers "actions" and "reducer"
+	inside "actions" add file "posts.js", also do the same thing for reducer folder.
+	inside "reducer" folder, add file "index.js"
+	
+	Go to "index.js" of src folder add following code.
+	
+	/* Provider is going to keep track of the store which is global state and that allows us to access that store from anywhere inside the app
+	
+	import { Provider } from "react-redux";
+	import { createStore, applyMiddleware, compose } from "redux";
+	import thunk from "redux-thunk";
+	import reducers from "./reducers";
+	
+	/* To set redux, we first gonna create store */
+	
+	const store = createStore(reducers, compose(applyMiddleware(thunk)));
+	
+	/* Now we need to import reducers. So go to index.js file in reducer folder to export them */
+	Go to index.js in reducer folder
+	
+	import { combineReducers } from "redux";
+	import posts from "./posts.js";
+	
+	
+	/* inside combineReducers method we have all the individual reducers */
+	export default combineReducers({
+		posts
+	});
+	
+	
+	/* A reducer is function that accepts the states and action, then based on the action type, we want to some logic - return the action or state changed by the action */
+	In reducers state always need to be equal to something
+	Go to "post.js" in the reducer folder
+	
+	export default (posts = [], action) => {
+		switch(action.Type) {
+			case "FETCH_ALL" :
+				return posts;
+			case "CREATE" :
+				return posts;
+			default:
+				return posts;
+		}
+	}
+	
+	Go to "index.js" of src folder
+	Since now our store object is successfully created, we gonna wrap our applcation within provider component as following
+	
+	ReactDom.render(
+		<Provider store = {store} >
+			<App />
+		</Provider>
+		, document.getElementById("root"));
+		
+	The last thing we need to do is to specify store = {store} inside Provider.
+	
+	Our applicaion is successfully using redux now.
+	
+16) Using redux
+	first we need to dispatch our getPosts() function
+	import a hook from react-redux in app.js file
+	
+	import { useDispatch } from "react-redux";
+	/* useDispatch allows us to dispatch an action,
+	the best way to dispatch an action is inside useEffect()
+	
+	useEffect is initially going to be just the component that mount but later on it gonna become the component we will update */
+	
+	import React, { useEffect } from "react";
+	
+	/*we also gonna need an action */
+	import { getPosts } from "./actions/posts.js";
+	
+	const dispatch = useDispatch();
+	useEffect( () => {
+		dispatch(getPosts());
+	}, [dispatch]);
+	
+17) Now we will export the getPosts actions. So go to "posts.js" inside action folder.
+	We are gonna use the "index.js" inside the api folder.
+	
+	import * as api from "../api"; /* means import everyting as api from the api folder */
+	
+	/* now we need to create Action Creators in "post.js" of action folder */
+	Action must have type property and they can have payload.
+	
+	const getPosts = () => {
+	  const action = { type: "FETCH_ALL", payload: [] }
+	  return action;
+	  }
+	 
+	above action is gonna take some time to execute, for that we gonna use redux-thunk
+	redux-thunk allows us to add an additional arrow function to specify async
+	now instead of actually returning action, we need to dispatch action
+	
+	const getPosts = () => async => (dispatch) => {
+	  const action = { type: "FETCH_ALL", payload: [] }
+	  dispatch( action);
+	  }
+	  
+18) response object always have a field "data".
+
+19) Now how do we actually retreive the data from within our components
+	  In the posts.js file of Posts folder within component folder
+	  we have to somehow fetch the data from the global redux store. To do that we use "selectors".
+	  
+	  import { useSelector } from 'react-redux';
+	  
+	  /* useSelector() have a callback function as argument. The callback fuction has access to the whole global redux store */
+	  const posts = useSelector((state) => stae.posts); 
+	  
+20) One thing we need to do in our react application to make request to our server work (to avoid CORS error)
+	go to the package.json of client project
+	below private: "true", add the port of server
+	
+	"proxy": "http://localhost:5000"
+	
+	Remember: whenever you change in package.json you need to restart your application from terminal
+	
+21) Above was not a fix. Actual fix below.
+	In the server project in the index.js, we used app.use("/posts", postRoutes); above app.use(cors());
+	remember always app.use(cors()); will come above
+	
+	app.use(cors());
+	app.use("/posts", postRoutes);
+	
+22) Now lets create a form in the Form.js file
+	import { TextField, Button, Typography, Paper } from "@material-ui/core";
+	
+	const handleSubmit = () => { }
+	<Paper className={classes.paper} >
+		<form autoComplete="off" noValidate className={classes.form} onSubmit={handleSubmit}>
+			<Typography variant="h6">Creating a Memory</Typography>
+			<TextField
+				name="creator"
+				variant="outlined"
+				label="Creator"
+				fullWidth
+				value={postData.creator}
+				onChange={}
+			/>
+		</form>
+	</Paper>
+	
+	value={} and onChange={} property are very important.
+	value={postData.creatro} means whole post data will be stored in the object "postData" present in the state.
+	Each object key will be a specific text field
+	
+	Now lets create that state using the useState property
+	
+	import React, { useState } from "react";
+	
+	const [postData, setPostData] = useState({
+		creator: '', title: '', message: '', tags: '', selectedFile: ''
+	});
+	
+	we have postData object in the state and we want to update only one field in the object. We can do it as below
+	onChange={ (e) => setPostData({ creator: e.target.value }) }
+	
+	But later on we add second TextField, it will always override other key's value in the object, and the object will have only creator key present in it. (as u can see we are not specifying them)
+	
+	To fix above, we actually first need to spread the postData. (that mean all the properties will persist while changing only the property mentioned at last)
+	
+	onChange={ (e) => setPostData({ creator: e.target.value }) }
+	
+23) Add a input of File type in the form.
+	import FileBase from "react-file-base64";
+	
+	<div className={classes.fileInput}>
+		<FileBase
+			type="file"
+			multiple={false}
+			onDone={({base64}) => setPostData({ ...postData, selectedFile: base64 })}
+		/>
+	</div>
+
+24) Now on form submit posts gets added in the database
+    Now lets add the api request and the action for the post request
+	
+	go to the "index.js" in the api folder
+	
+	export const createPost = (newPost) => axios.post(url, newPost);
+	
+	now import this createPost in the actions, so go to "posts.js" in the actions folder
+	
+	export const createPost = (post) => async (dispatch) => {
+		try {
+			const { data } = await api.createPost(post);
+			
+			dispatch( { type: 'CREATE', payload: data } );
+		} catch(error) {
+			console.log(error.message);
+		}
+	}
+	
+	Now we need to dipatch the action created above.
+	Go to the Form.js file.
+	here we can utilize "useDispatch".
+	
+	import { useDispatch } from "react-redux";
+	import { createPost } from "../../actions/posts";
+	const dispatch = useDispatch();
+	
+	now the question is, where do we dispatch action? -> ofcourse in the handle submit method, when user submit we want to send a post request
+	
+	handleSubmit = (e) => {
+	  e.preventDefault();
+	  dispatch(createPost(postData));
+	 }
+	 
+	 first of all we always must have e.preventDefault() for not to get refresh in the browser
+	
+	Once action is dispatched, we go to the reducers, so go to the posts.js inside the reducer folder.
+	
+	what we want to do under "CREATE"
+	we have to send over an array. ofcourse we have an array of posts
+	first we have to spead all the posts and then we have to add a new post and that new post is saved in the action.payload
+	
+SECOND PART *******************************************************
+
+We are going to format displaying of Posts now. So go to Posts.js in the components folder
+
+25) import { Grid, CircularProgress } from "@material-ui/core";
+
+	return (
+        !posts.length ? <CircularProgress /> : (
+            <Grid className={classes.container} container alignItems="stretch" spacing={3} >
+                {posts.map((post) => (
+                    <Grid key={post._id} item xs={12} sm={6}>
+                        <Post post={post} />
+                    </Grid>
+                ))}
+            </Grid>
+        )
+    );
+	{
+	} inside Grit tells a javascript code is written inside
+	
+26) Go to Post.js inside Post folder of component
+	-> npm install @material-ui/icons
+	
+	import moment from "moment";
+	import { Card, CardActions, CardMedia, CardContent, Button, Typography } from "@material-ui/core";
+	
+	To display "createdAt" like 5mins ago, 5sec ago.. we are using moment. It has method fromNow() which does the required thing
+	
+27) To add a background to your web application
+	Go to src folder and add a new file "index.css"
+	connect this index.css to index.js of src folder by importing in it
+	
+	body {
+		paste the svg from the backgroundsvg.com
+	}
+	
+28) Implement update route
+	Go to the server project, in the "posts.js" file in the routes folder
+	we are gonna use router.patch("/:id", updatePost);
+	
+	patch is used for updating existing document - we require id of the document
+	
+	Now we gonna go to file "posts.js" in the controller folder to export updatePost method
+	
+	we are gonna extract id from the req.params and rename it to "_id" as below
+	const { id: _id } = req.params;
+	
+	we are going to do one simple check to see whether "_id" is mongoose object id or not
+	
+	if(mongoose.Type.ObjectId.isValid(_id)) { 
+	const updatedPost = await PostMessage.findByIdAndUpdate(_id, post, { new: true });
+	res.json(updatedPost);
+	}
+	
+	second arg: newPost, third arg: to receive new post after updation
+	
+	Thats it for the update route at the controller. Now lets go to client side to implement logic
+	
+29) Update logic at client side
+	Go to the "Form.js" file in the component folder
+	
+	To do with Plain react:
+	When the MoreHoriz button on the post is clicked, we want to pre-populate post detail with that "id" in the Form.
+	
+	MoreHoriz button is on the Post component and we want to pre-populate the post detail in the Form Component.
+	
+	We go to App.js as it is parent to both Post component and Form component.
+	
+	import { useState } from "react";
+	
+	const [currentId, setCurrentId] = useState(null);  (at the state currentId will be null)
+	
+	now we are gonna pass the currentId over to the form.
+	we are also gonna passes setter method for currentId to both Posts and Form component
+	
+	<Posts setCurrentId={setCurrentId} />
+	<Form currentId={currentId} setCurrentId={setCurrentId} />
+	
+	Now we go to the above components and accept these as props
+	
+	From Posts.js we need to send setCurrentId prop to Post.js (child component) as well. This is called Prop drilling. Redux solves exactly this problem
+	
+	When moreHoriz button in Post.js component is clicked, setCurrentId(post._id) is called, and currentId state changes, and it is received by Form.js as it have prop currentId
+	
+	Form.js
+	if(currentId) 
+		dispatch(updatePost(currentId, postData));
+	else
+		dispatch(createPost(postData);
+	
+	Now we are export updatePost from Posts.js in the action folder
+	
+	First going to "index.js" of api folder and implement api call for our updatePostRoute. As action folder uses api.
+	
+	export const updatePost = (id, updatedPost) => axios.patch(`${url}/${id}`, updatedPost);
+	Now going to actions "index.js"
+	export const updatePost = (id, post) => async (dispatch) => {
+		try {
+			const { data } = await api.updatePost(id, post);
+			dispatch({ type: "UPDATE", payload: data });
+		} catch(error) {
+			console.log(error.message);
+		}
+	}
+	
+	Now we need to go to "posts.js" in the reducer folder, to implement logic towards action "UPDATE"
+	
+	Quick quest : what is the output of array.map() method ?
+	ans : It is an array.
+	we will be mapping over posts array, we are going to change something there and we are gonna return that array.
+	return posts.map((post) => post._id == action.payload._id ? action.payload : post );
+	
+	Going to Form.js in the Form component
+	import { useSelector } from "react-redux";
+	
+	const post = useSelector((state) => currentId ? state.posts.find((p) => p._id == currentId ): null );
+	
+	getting a single post with selected currentId by iterating over all posts
+	Now we have data for the selected post, we just have to do import useEffect, and use it to populate the values of the form
+	
+	import { useEffect } from "react";
+	
+	useEffect(() => {
+	}, [] );	/* it executes the callback function inside, when the value in dependency array changes.
+	
+	useEffect(() => {
+        if(post)
+            setPostData(post);  // if post exists then populate postData
+    }, [post]);
+	
+30) Now lets change header of form to "Editing a Memory" on MoreHoriz button click
+	<Typography variant="h6">{ currentId ? "Editing" : "Creating"} a Memory</Typography>
+	
+31) When we click on submit we want to clear all the input and change heading back to Creating. Now we will implement clear() method.
+	
+	const clear = () => {
+        setCurrentId(null);
+        setPostData({ creator: '', title: '', message: '', tags: '', selectedFile: '' });
+    }
+	and also calling clear() at the last of handleSubmit() method in the Form.js
+	
+32) Now emptying of fields on submit now should trigger getting of latest posts from backend.
+
+	For this going to App.js and in that adding currentId in the dependency list of useEffect.
+	
+	useEffect(() => {
+        dispatch(getPosts());
+    }, [currentId, dispatch]);
+	
+	Since on form submit -> we are calling clear() -> and it changes currentId
+	so now on every form submit dispatch(getPosts()); would be called.
+	
+33) Now we will implement delete
+	First we will implement the backend logic and then we are gonna connect it to frontend.
+	
+	We first will create delete router in the posts.js file in the router folder
+	router.delete("/:id", deletePost);
+	
+	Now we are gonna import method deletePost from posts.js of controller folder
+	
+	export const deletePost = async (req, res) => {
+		const { id } = req.params;
+		try {
+			if(!mongoose.Types.ObjectId.isValid(id))
+				return res.status(404).send("No post with that id");
+			
+			await PostMessage.findByIdAndRemove(id);
+			res.json({ message: "Post deleted successfully."});
+		} catch(error) {
+			console.log(error);
+			return res.status(404).send("No post with that id");
+		}
+	}
+	
+34) Now we can go to the front end
+    We go to index.js of the api folder and implement the api call to delete
+	
+	export const deletePost = (id) => axios.delete(`${url}/${id}`);
+	
+	Now we go to actions folder to create our action creator
+	export const deletePost = (id) => async (dispatch) => {
+		try {
+			await api.deletePost(id);
+			dispatch({ type: "DELETE", payload: id });
+		} catch(error){
+			console.log(error);
+		}
+	}
+	
+	Now we go to the posts.js of the reducer folder to implement the logic of action
+	case "DELETE":
+            return posts.filter((post) => post._id !== action.payload);
+	i.e we are gonna return all the posts except the one, where its id is equal to the payload (which is a id of deleted post)
+	
+	We can now go to Post.js component and dispatch our action.
+	
+	import { useDispatch } from "react-redux";
+	import { deletePost } from "../../../actions/posts";
+	
+	const dispatch = useDispatch();
+	in delete button onClick={() => dispatch(deletePost(post._id))}
+	
+35) Now adding the functionality of Like button
+	Go to the routes folder at backend
+	
+	router.patch("/:id/likePost", likePost);
+	
+	Now we have to import likePost method from post.js file of controller
+	
+export const likePost = async (req, res) => {
+    const { id } = req.params;
+		try {
+			if(!mongoose.Types.ObjectId.isValid(id))
+				return res.status(404).send("No post with that id");
+
+			const post = await PostMessage.findById(id);
+			const updatedPost = await PostMessage.findByIdAndUpdate(id, { likeCount: post.likeCount + 1 }, { new: true });
+			res.json(updatedPost);
+		} catch(error) {
+			console.log(error);
+			return res.status(404).send("No post with that id");
+		}
+	}
+	
+36) Now going to the frontend
+	Go to the "index.js" file of api folder and implement the api call
+	export const likePost = (id) => axios.patch(`${url}/${id}/likePost`);
+	
+	we now go to posts.js of the action folder to create Action creator
+	export const likePost = (id) => async (dispatch) => {
+		try {
+			const { data } = await api.likePost(id);
+			dispatch({ type: "LIKE", payload: data });
+		} catch(error)
+		{
+			console.log(error);
+		}
+	}
+	
+	Now we go to reducers folder in the posts.js file to implement the logic of liking post action.
+	case "LIKE":
+	 case "UPDATE":
+		return posts.map((post) => post._id === action.payload._id ? action.payload : post);
+		
+	Now we go to the Post.js component
+	import { likePost } from "../../../actions/posts";
+	in like button onClick={() => dispatch(likePost(post._id))}
+	
+***********************************************************
+
+We have implemented all functionalities for the project.
+now making our app more professional
+
+37)&nbsp; stands for a space character used in html to interprest space
+
+38) Meterial UI provides us with theme.breakpoints to perform media query
+    in styles.css
+	[theme.breakpoints.down('sm')]: {
+    mainContainer: {
+      flexDirection: "column-reverse",
+    }
+  }
+  
+39) Protecting our db connection links usename, password, tokens etc in the server project before uploading our code in github
+
+	create ".env" file in the server project. this file is not committed on the github, it is only accessible by your pc.
+	
+40) deploying your backend at heroku
+	create a .gitignore file and node modules in it
+	
+	remember: heroku does not require PORT variable as it will give his own.
+	so before deploying on Heroku always remove PORT variable from .env file
+	
+	Also before deploying backend at heroku, you need to create a file named "Procfile" in the server folder.
+	and add following content in it.
+	
+	web: npm run start
+	
+	
